@@ -1,0 +1,397 @@
+<!doctype html><html lang="en" data-theme="navy"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><title>COAL Lab — 32-bit Assembly Simulator</title>
+<style>
+:root{--bg:#000814;--pn:#001D3D;--pn2:#00142b;--bd:#003566;--ac:#FFC300;--ac2:#FFD60A;--tx:#e8eef8;--mu:#7f93b0;--ok:#5fd38d;--er:#ff6b6b;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);color-scheme:dark}
+:root[data-theme=bordeaux]{--bg:#0A0908;--pn:#49111C;--pn2:#2c0b11;--bd:#5E503F;--ac:#A9927D;--ac2:#F2F4F3;--tx:#F2F4F3;--mu:#A9927D}
+*{box-sizing:border-box}html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;background:var(--bg);color:var(--tx);font:13px/1.4 system-ui,sans-serif;transition:background .3s}
+button,select,input{font:inherit;color:var(--tx);background:var(--pn2);border:1px solid var(--bd);border-radius:4px;padding:4px 8px}
+button{cursor:pointer}button:hover{border-color:var(--ac);color:var(--ac2)}button.p{background:var(--ac);color:var(--bg);border-color:var(--ac);font-weight:700}
+header{display:flex;flex-wrap:wrap;gap:6px;align-items:center;padding:8px 10px;background:var(--pn);border-bottom:2px solid var(--ac);position:sticky;top:env(safe-area-inset-top,0px);z-index:5}
+h1{font-size:15px;margin:0 8px 0 0;color:var(--ac);letter-spacing:1px}#stt{padding:2px 8px;border-radius:9px;background:var(--bd);font-weight:700}
+main{display:grid;grid-template-columns:minmax(0,1.25fr) minmax(0,1fr);gap:8px;padding:8px}@media(max-width:900px){main{grid-template-columns:1fr}}
+.pnl{background:var(--pn);border:1px solid var(--bd);border-radius:6px;overflow:hidden}.pnl>h2{margin:0;padding:4px 10px;font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:var(--ac);background:var(--pn2)}
+.mono,pre,textarea{font:13px/20px ui-monospace,Menlo,Consolas,monospace}
+#edw{display:flex;height:400px;background:var(--bg)}#gu{width:52px;overflow:hidden;background:var(--pn2);color:var(--mu);text-align:right;padding:8px 0;user-select:none}
+.g{height:20px;padding-right:6px;cursor:pointer;font:12px/20px monospace}.g.bp{background:radial-gradient(circle at 8px 10px,var(--er) 5px,transparent 6px)}.g.ran{border-right:3px solid var(--ok)}.g.err{color:var(--er);font-weight:700}
+#ew{position:relative;flex:1}#hl,#ed{position:absolute;inset:0;margin:0;padding:8px;white-space:pre;overflow:auto;tab-size:4;border:0;border-radius:0}#hl{overflow:hidden;pointer-events:none}
+#ed{background:transparent;color:transparent;caret-color:var(--ac);resize:none;outline:0}.l{height:20px}.l.cur{background:#ffc30030;outline:1px solid var(--ac)}.l.err{background:#ff6b6b30}
+.k{color:var(--ac)}.r{color:#5ec8ff}.n{color:#ff9e64}.s{color:var(--ok)}.c{color:var(--mu);font-style:italic}.b{color:#c792ea}.d{color:var(--ac2);font-weight:700}
+#errs{max-height:80px;overflow:auto;color:var(--er);padding:2px 10px}#term{margin:0;height:150px;overflow:auto;padding:6px 10px;background:#000;color:#7CFC9A;white-space:pre-wrap}
+.tabs{display:flex;flex-wrap:wrap;background:var(--pn2)}.tabs button{border:0;border-radius:0;border-bottom:2px solid transparent}.tabs button.on{border-color:var(--ac);color:var(--ac)}
+.tb{height:330px;overflow:auto;padding:8px;display:none}.tb.on{display:block}
+#regs{display:grid;grid-template-columns:repeat(2,1fr);gap:4px;padding:8px}.rg{background:var(--pn2);border:1px solid var(--bd);border-radius:4px;padding:3px 6px}.rg b{color:var(--ac)}.rg small{color:var(--mu);display:block}.rg.chg{border-color:var(--ac2);box-shadow:0 0 6px var(--ac)}
+.fl{display:inline-block;margin:2px;padding:1px 8px;border-radius:9px;background:var(--bd);color:var(--mu)}.fl.on{background:var(--ac);color:var(--bg);font-weight:700}
+table{border-collapse:collapse;width:100%}td,th{padding:1px 5px;text-align:left}.hot{background:var(--ac);color:var(--bg)}.mu{color:var(--mu)}.ct{margin:0 0 8px;padding:6px 8px;background:var(--pn2);border-left:3px solid var(--ac);border-radius:3px}.ct b{color:var(--ac2)}
+</style></head><body>
+<header><h1>◈ COAL·LAB <span class="mu">x86-32</span></h1>
+<button class="p" id="bA" title="Assemble (Ctrl+Enter)">Assemble</button><button id="bR" title="Run (F5)">▶ Run</button><button id="bP" title="Pause (Esc)">❚❚ Pause</button><button id="bI" title="Step Into (F11)">Step</button><button id="bO" title="Step Over (F10)">Over</button><button id="bS">■ Stop</button><button id="bX">Reset</button><button id="bY">Restart</button>
+<label class="mu" title="Execution speed">speed <input id="spd" type="range" min="1" max="100" value="70"></label><span id="stt">idle</span>
+<select id="exs" title="Example library"></select><button id="bT" title="Switch theme">Navy ⇄ Bordeaux</button></header>
+<main><section>
+<div class="pnl"><h2>Assembly editor <span class="mu">— click gutter to set breakpoint (F9) · green bar = executed</span></h2><div id="edw"><div id="gu"></div><div id="ew"><pre id="hl"></pre><textarea id="ed" spellcheck="false" wrap="off"></textarea></div></div><div id="errs"></div>
+<div style="padding:6px 10px;display:flex;flex-wrap:wrap;gap:6px"><input id="pn" placeholder="program name" size="12"><button id="bSv">Save</button><select id="svs"></select><button id="bLd">Load</button><button id="bIm">Import .asm</button><button id="bEx">Export .asm</button><button id="bCp">Copy</button><button id="bCb">Clear BPs</button><input type="file" id="fi" hidden></div></div>
+<div class="pnl" style="margin-top:8px"><h2>Terminal <button id="bCl" style="float:right;padding:0 6px">clear</button></h2><pre id="term">Press Assemble, then Run or Step.</pre><input id="sin" placeholder="stdin for SYS_READ (newline appended)" style="width:100%;border-radius:0"></div></section>
+<section><div class="pnl"><h2>CPU dashboard</h2><div id="regs"></div><div id="fls" style="padding:0 8px 8px"></div></div>
+<div class="pnl" style="margin-top:8px"><div class="tabs" id="tabs"></div>
+<div class="tb on" id="t-mem"><input id="ma" size="10" value="0x0804A000"> <button data-a="d">Data</button><button data-a="s">Stack</button><button data-a="e">ESP</button><div id="mv" class="mono"></div></div>
+<div class="tb" id="t-stk"></div><div class="tb" id="t-tl"></div><div class="tb" id="t-ex"></div>
+<div class="tb" id="t-ref"><input id="rq" placeholder="search instructions…" style="width:100%"><div id="rl"></div></div><div class="tb" id="t-lrn"></div><div class="tb" id="t-st"></div></div></section></main>
+<script>
+const $=i=>document.getElementById(i),esc=s=>String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;'),hx=(v,n=8)=>(v>>>0).toString(16).toUpperCase().padStart(n,'0');
+const CB=0x08048000,DBA=0x0804A000,DSZ=0x10000,SB=0xBFFE0000,SSZ=0x20000,LIM=500000;
+const N32=['eax','ecx','edx','ebx','esp','ebp','esi','edi'],N16=['ax','cx','dx','bx','sp','bp','si','di'],N8=['al','cl','dl','bl','ah','ch','dh','bh'];
+const reg=n=>{n=n.toLowerCase();let i=N32.indexOf(n);if(i>=0)return{k:'r',i,sz:32,sh:0};i=N16.indexOf(n);if(i>=0)return{k:'r',i,sz:16,sh:0};i=N8.indexOf(n);return i>=0?{k:'r',i:i&3,sz:8,sh:i>3?8:0}:null};
+const AA={8:reg('al'),16:reg('ax'),32:reg('eax')},DD={16:reg('dx'),32:reg('edx')},AH=reg('ah');
+const OPS={};'mov:2 add:2 sub:2 adc:2 sbb:2 cmp:2 test:2 and:2 or:2 xor:2 xchg:2 lea:2 movzx:2 movsx:2 shl:2 shr:2 sal:2 sar:2 rol:2 ror:2 inc:1 dec:1 neg:1 not:1 mul:1 div:1 idiv:1 push:1 pop:1 call:1 jmp:1 int:1 loop:1 nop:0 ret:0 cdq:0 hlt:0 leave:0'.split(' ').forEach(s=>{const[k,v]=s.split(':');OPS[k]=[+v,+v]});OPS.imul=[1,3];
+const CC={e:f=>f.zf,ne:f=>!f.zf,g:f=>!f.zf&&f.sf==f.of,ge:f=>f.sf==f.of,l:f=>f.sf!=f.of,le:f=>f.zf||f.sf!=f.of,a:f=>!f.cf&&!f.zf,ae:f=>!f.cf,b:f=>f.cf,be:f=>f.cf||f.zf,s:f=>f.sf,ns:f=>!f.sf,o:f=>f.of,no:f=>!f.of,p:f=>f.pf,np:f=>!f.pf};
+[['z','e'],['nz','ne'],['nle','g'],['nl','ge'],['ng','le'],['nge','l'],['na','be'],['nae','b'],['nb','ae'],['nbe','a'],['c','b'],['nc','ae']].forEach(([a,b])=>CC[a]=CC[b]);Object.keys(CC).forEach(c=>OPS['j'+c]=[1,1]);
+const DIRS=new Set('section segment global extern bits default org db dw dd resb resw resd times .text .data .bss'.split(' '));
+let R=new Uint32Array(8),F={cf:0,pf:0,af:0,zf:0,sf:0,of:0},EIP=CB,D=new Uint8Array(DSZ),S=new Uint8Array(SSZ),initD=new Uint8Array(DSZ),prog=[],sym={},errs=[],srcL=[],st='idle',halted=0,steps=0,cycles=0,cov=new Set,bps=new Set,hist=[],memLog=[],lastW=[],outS='',stdin='',sp0=0,pre=[...R],entry=CB,tgt=null,tsp=0;
+const M=s=>2**s,mk=(v,s)=>((v%M(s))+M(s))%M(s),sg=(v,s)=>Math.floor(v/2**(s-1))%2,sv=(v,s)=>v>=M(s-1)?v-M(s):v;
+// ---- memory
+function loc(a,n,w){if(a>=DBA&&a+n<=DBA+DSZ)return[D,a-DBA];if(a>=SB&&a+n<=SB+SSZ)return[S,a-SB];throw Error(`Invalid memory ${w} at 0x${hx(a)} (${n} byte${n>1?'s':''}) — outside data/stack segments`)}
+function rd(a,n){a>>>=0;const[m,o]=loc(a,n,'read');let v=0;for(let i=n-1;i>=0;i--)v=v*256+m[o+i];return v}
+function wr(a,n,v){a>>>=0;const[m,o]=loc(a,n,'write');for(let i=0;i<n;i++){m[o+i]=v%256;v=Math.floor(v/256);memLog.push(a+i)}}
+const ea=o=>(o.d+(o.b!=null?R[o.b]:0)+(o.x!=null?R[o.x]*o.s:0))>>>0;
+function get(o,sz){if(o.k=='i')return mk(o.v,sz||32);if(o.k=='r')return o.sz==32?R[o.i]:(R[o.i]>>>o.sh)&(o.sz==8?255:65535);return rd(ea(o),o.sz/8)}
+function set(o,v){v=mk(v,o.sz);if(o.k=='r'){if(o.sz==32)R[o.i]=v;else{const m=(o.sz==8?255:65535)<<o.sh;R[o.i]=((R[o.i]&~m)|(v<<o.sh))>>>0}}else wr(ea(o),o.sz/8,v)}
+// ---- flags
+function szp(r,s){F.zf=+(r==0);F.sf=sg(r,s);let x=r&255,p=0;while(x){p^=x&1;x>>=1}F.pf=+(p==0)}
+function addf(x,y,s,c){const t=x+y+c,r=t%M(s);F.cf=+(t>=M(s));F.of=+(sg(x,s)==sg(y,s)&&sg(r,s)!=sg(x,s));F.af=((x^y^r)>>4)&1;szp(r,s);return r}
+function subf(x,y,s,c){const t=x-y-c,r=mk(t,s);F.cf=+(t<0);F.of=+(sg(x,s)!=sg(y,s)&&sg(r,s)!=sg(x,s));F.af=((x^y^r)>>4)&1;szp(r,s);return r}
+function logf(r,s){F.cf=F.of=F.af=0;szp(r,s);return r}
+// ---- assembler
+const strip=l=>{let q=null,o='';for(const c of l){if(q){o+=c;if(c==q)q=null}else if(c=='"'||c=="'"){q=c;o+=c}else if(c==';')break;else o+=c}return o.trim()};
+function splitC(s){const a=[];let q=null,cur='';for(const c of s){if(q){cur+=c;if(c==q)q=null}else if(c=='"'||c=="'"){q=c;cur+=c}else if(c==','){a.push(cur.trim());cur=''}else cur+=c}if(cur.trim()!=='')a.push(cur.trim());return a}
+function ev(e,here){const s=e.trim().replace(/'(.)'|0x[0-9a-f]+|\b[0-9][0-9a-f]*h\b|\b0b[01]+\b|\b[01]+b\b|\b\d+\b|[a-z_.$][\w.$]*/gi,(m,c)=>{if(c!==undefined)return c.charCodeAt(0);if(/^0x/i.test(m))return parseInt(m,16);if(/^0b/i.test(m))return parseInt(m.slice(2),2);if(/^\d+$/.test(m))return m;if(/^[0-9].*h$/i.test(m))return parseInt(m,16);if(/^[01]+b$/i.test(m))return parseInt(m,2);if(m=='$')return here;if(m in sym)return sym[m];throw Error('Undefined symbol or bad expression: '+m)});
+ if(!/^[-+*\/()%\s\d]+$/.test(s))throw Error('Bad expression: '+e);return Math.trunc(Function('return('+s+')')())}
+function parseOp(s){let sz=0,m=s.match(/^(byte|word|dword)\s+(.*)$/i);if(m){sz={byte:8,word:16,dword:32}[m[1].toLowerCase()];s=m[2].trim()}
+ const r=reg(s);if(r)return r;
+ if(s[0]=='['&&s.endsWith(']')){const o={k:'m',b:null,x:null,s:1,d:0,sz};let ex='';
+  for(const t of s.slice(1,-1).replace(/\s+/g,'').split(/(?=[+-])/)){const mm=t.match(/^([+-]?)(\w+)(?:\*(\d))?$/),rg=mm&&reg(mm[2]);
+   if(rg&&rg.sz==32){if(mm[3]){if(o.x!=null)throw Error('Bad address');o.x=rg.i;o.s=+mm[3]}else if(o.b==null)o.b=rg.i;else if(o.x==null)o.x=rg.i;else throw Error('Bad address: too many registers')}else ex+=t}
+  o.d=ex?ev(ex):0;return o}
+ if(!s)throw Error('Empty operand');return{k:'i',v:ev(s)}}
+function assemble(src){srcL=src.split('\n');errs=[];sym={};prog=[];D.fill(0);let sec='text',dp=DBA;
+ const def=n=>{if(n in sym)throw Error('Duplicate symbol '+n);sym[n]=sec=='text'?CB+prog.length*4:dp};
+ const put=(v,n)=>{if(dp+n>DBA+DSZ)throw Error('Data section too large');v=mk(v,8*n);for(let i=0;i<n;i++){D[dp-DBA+i]=v%256;v=Math.floor(v/256)}dp+=n};
+ const emit=(f,r)=>{const n={db:1,dw:2,dd:4,resb:1,resw:2,resd:4}[f];if(f[0]=='r'){const c=ev(r,dp)*n;if(c<0||dp+c>DBA+DSZ)throw Error('Bad reservation size');dp+=c;return}
+  const its=splitC(r);if(!its.length)throw Error('Missing data');for(const it of its){if(it[0]=='"'||(it[0]=="'"&&it.length!=3)){if(it.slice(-1)!=it[0])throw Error('Unterminated string');for(const ch of it.slice(1,-1))put(ch.charCodeAt(0),n)}else put(ev(it,dp),n)}};
+ srcL.forEach((raw,i)=>{try{let t=strip(raw),m;if(!t)return;while((m=t.match(/^([A-Za-z_.$][\w.$]*):\s*(.*)$/))){def(m[1]);t=m[2]}if(!t)return;
+  const w=t.match(/^(\S+)\s*(.*)$/);let f=w[1].toLowerCase(),r=w[2],w2;
+  if(!OPS[f]&&!DIRS.has(f)&&(w2=r.match(/^(db|dw|dd|resb|resw|resd|equ|times)\b\s*(.*)$/i))){if(w2[1].toLowerCase()=='equ'){if(w[1]in sym)throw Error('Duplicate symbol '+w[1]);sym[w[1]]=ev(w2[2],dp);return}def(w[1]);f=w2[1].toLowerCase();r=w2[2]}
+  if(['.text','.data','.bss'].includes(f)){sec=f.slice(1);return}
+  if(f=='section'||f=='segment'){sec=r.replace(/^\./,'').split(/\s/)[0].toLowerCase();if(!['text','data','bss'].includes(sec))throw Error('Unknown section '+r);return}
+  if(['global','extern','bits','default','org'].includes(f))return;
+  if(f=='times'){const mm=r.match(/^(.+?)\s+(db|dw|dd|resb|resw|resd)\b\s*(.*)$/i);if(!mm)throw Error('Bad TIMES');const c=ev(mm[1]);for(let k=0;k<c;k++)emit(mm[2].toLowerCase(),mm[3]);return}
+  if(/^(db|dw|dd|resb|resw|resd)$/.test(f)){emit(f,r);return}
+  if(!OPS[f])throw Error(`Invalid instruction '${w[1]}'`);if(sec!='text')throw Error('Instruction outside .text section');
+  const args=splitC(r);if(args.length<OPS[f][0]||args.length>OPS[f][1])throw Error(`'${f}' expects ${OPS[f][0]==OPS[f][1]?OPS[f][0]:OPS[f][0]+'-'+OPS[f][1]} operand(s), got ${args.length}`);prog.push({op:f,args,line:i+1})}catch(e){errs.push({line:i+1,msg:e.message})}});
+ prog.forEach(I=>{try{I.o=I.args.map(parseOp);const[a,b]=I.o,op=I.op,un=o=>o&&o.k=='m'&&!o.sz,sh=/^(sh.|sa.|ro.)$/.test(op),mx=/^mov[sz]x$/.test(op);
+  if(a&&b&&a.k=='m'&&b.k=='m')throw Error('Memory-to-memory operands are not allowed');
+  if(a&&a.k=='i'&&/^(mov|add|sub|adc|sbb|and|or|xor|inc|dec|neg|not|sh.|sa.|ro.|pop|xchg|lea|movzx|movsx|mul|div|idiv)$/.test(op))throw Error('Destination cannot be an immediate');
+  if(!sh&&!mx&&op!='lea'){if(un(a)&&b&&b.k=='r')a.sz=b.sz;if(un(b)&&a&&a.k=='r')b.sz=a.sz}
+  if(/^(lea|push|pop|call|jmp|int|loop|j.*)$/.test(op))I.o.forEach(o=>{if(un(o))o.sz=32});
+  I.o.forEach(o=>{if(un(o))throw Error('Operand size required — use byte/word/dword')});
+  if(a&&b&&a.sz&&b.sz&&a.sz!=b.sz&&!sh&&!mx&&op!='lea'&&op!='imul')throw Error(`Operand size mismatch (${a.sz} vs ${b.sz} bits)`);
+  if(mx&&(a.k!='r'||a.sz==8||b.k=='i'||b.sz>=a.sz))throw Error(op+' needs a wider register destination and a smaller register/memory source')}catch(e){errs.push({line:I.line,msg:e.message})}});
+ const ent=sym._start??sym.main;entry=ent!==undefined?ent:CB;if(!prog.length&&!errs.length)errs.push({line:1,msg:'No instructions found in .text'});errs.sort((x,y)=>x.line-y.line);return!errs.length}
+// ---- CPU
+function sys(){const n=R[0];if(n==1){halted=1;outS+=`\n[process exited with code ${R[3]|0}]\n`}
+ else if(n==4){let s='';for(let i=0;i<R[2];i++)s+=String.fromCharCode(rd((R[1]+i)>>>0,1));if(R[3]!=1&&R[3]!=2)throw Error('SYS_WRITE: only fd 1/2 supported (ebx='+(R[3]|0)+')');outS+=s;R[0]=R[2]}
+ else if(n==3){if(R[3]!=0)throw Error('SYS_READ: only fd 0 supported');const t=stdin.slice(0,R[2]);stdin=stdin.slice(t.length);for(let i=0;i<t.length;i++)wr((R[1]+i)>>>0,1,t.charCodeAt(i)&255);R[0]=t.length}
+ else throw Error(`Unsupported Linux syscall eax=${n} (supported: 1 exit, 3 read, 4 write)`)}
+function exec(I){const[a,b,c]=I.o,op=I.op;let nx=EIP+4,sz=a&&a.sz;const cf0=F.cf;
+ const push=v=>{if(R[4]-4<SB)throw Error('Stack overflow — ESP left the stack segment');R[4]=(R[4]-4)>>>0;wr(R[4],4,v)},pop=()=>{if(R[4]+4>SB+SSZ)throw Error('Stack underflow — POP/RET with an empty stack');const v=rd(R[4],4);R[4]=(R[4]+4)>>>0;return v};
+ if(op[0]=='j'&&op!='jmp'){if(CC[op.slice(1)](F))nx=get(a,32)}else switch(op){
+ case'mov':set(a,get(b,sz));break;case'add':set(a,addf(get(a),get(b,sz),sz,0));break;case'adc':set(a,addf(get(a),get(b,sz),sz,cf0));break;
+ case'sub':set(a,subf(get(a),get(b,sz),sz,0));break;case'sbb':set(a,subf(get(a),get(b,sz),sz,cf0));break;case'cmp':subf(get(a),get(b,sz),sz,0);break;
+ case'and':set(a,logf((get(a)&get(b,sz))>>>0,sz));break;case'or':set(a,logf((get(a)|get(b,sz))>>>0,sz));break;case'xor':set(a,logf((get(a)^get(b,sz))>>>0,sz));break;case'test':logf((get(a)&get(b,sz))>>>0,sz);break;
+ case'inc':set(a,addf(get(a),1,sz,0));F.cf=cf0;break;case'dec':set(a,subf(get(a),1,sz,0));F.cf=cf0;break;case'neg':set(a,subf(0,get(a),sz,0));break;case'not':set(a,M(sz)-1-get(a));break;
+ case'shl':case'sal':case'shr':case'sar':case'rol':case'ror':{const x=get(a),n=get(b,8)&31;if(!n)break;let r;
+  if(op=='shl'||op=='sal'){r=mk(x*2**n,sz);F.cf=n<=sz?Math.floor(x/2**(sz-n))%2:0;szp(r,sz);F.of=sg(r,sz)^F.cf}
+  else if(op=='shr'){r=Math.floor(x/2**n);F.cf=Math.floor(x/2**(n-1))%2;szp(r,sz);F.of=sg(x,sz)}
+  else if(op=='sar'){r=mk(Math.floor(sv(x,sz)/2**n),sz);F.cf=Math.floor(sv(x,sz)/2**(n-1))%2;szp(r,sz);F.of=0}
+  else{const k=n%sz;if(op=='rol'){r=k?mk(x*2**k,sz)+Math.floor(x/2**(sz-k)):x;F.cf=r%2;F.of=sg(r,sz)^F.cf}else{r=k?Math.floor(x/2**k)+(x%2**k)*2**(sz-k):x;F.cf=sg(r,sz);F.of=sg(r,sz)^sg(r,sz-1>0?sz:sz)&0}}
+  set(a,r);break}
+ case'mul':{const B=BigInt(M(sz)),p=BigInt(get(AA[sz]))*BigInt(get(a));if(sz==8)set(AA[16],Number(p));else{set(AA[sz],Number(p%B));set(DD[sz],Number(p/B))}F.cf=F.of=+(p>=B);break}
+ case'imul':{if(I.o.length==1){const B=BigInt(M(sz)),p=BigInt(sv(get(AA[sz]),sz))*BigInt(sv(get(a),sz)),lo=((p%B)+B)%B;if(sz==8)set(AA[16],Number(((p%65536n)+65536n)%65536n));else{set(AA[sz],Number(lo));set(DD[sz],Number(((p>>BigInt(sz))%B+B)%B))}F.cf=F.of=+(p<-B/2n||p>=B/2n)}
+  else{const s1=c?b:a,s2=c?c:b,B=BigInt(M(sz)),p=BigInt(sv(get(s1,sz),sz))*BigInt(sv(get(s2,sz),sz));set(a,Number(((p%B)+B)%B));F.cf=F.of=+(p<-B/2n||p>=B/2n)}break}
+ case'div':case'idiv':{const B=BigInt(M(sz)),sd=op=='idiv';let d=BigInt(sd?sv(get(a),sz):get(a));if(d==0n)throw Error('Division by zero (#DE) — divisor is 0');
+  let n=sz==8?BigInt(get(AA[16])):BigInt(get(DD[sz]))*B+BigInt(get(AA[sz]));if(sd&&n>=B*(sz==8?B:B)/2n&&sz!=8)n-=B*B;if(sd&&sz==8&&n>=32768n)n-=65536n;
+  const q=n/d,r=n%d;if(sd?(q>=B/2n||q<-B/2n):q>=B)throw Error('Divide overflow (#DE) — quotient does not fit in destination');
+  if(sz==8){set(AA[8],Number(((q%B)+B)%B));set(AH,Number(((r%B)+B)%B))}else{set(AA[sz],Number(((q%B)+B)%B));set(DD[sz],Number(((r%B)+B)%B))}break}
+ case'cdq':R[2]=R[0]>=2**31?0xFFFFFFFF:0;break;
+ case'push':push(get(a,32));break;case'pop':set(a,pop());break;
+ case'call':push(nx);nx=get(a,32);break;case'ret':nx=pop();break;case'jmp':nx=get(a,32);break;
+ case'loop':R[1]=(R[1]-1)>>>0;if(R[1])nx=get(a,32);break;
+ case'lea':set(a,ea(b));break;case'xchg':{const x=get(a),y=get(b);set(a,y);set(b,x);break}
+ case'movzx':set(a,get(b));break;case'movsx':set(a,sv(get(b),b.sz));break;
+ case'leave':R[4]=R[5];R[5]=pop();break;case'nop':break;case'hlt':halted=1;break;
+ case'int':if(get(a,32)!=0x80)throw Error('Unsupported interrupt (only int 0x80)');sys();break}
+ EIP=nx>>>0}
+function stepOnce(){const idx=(EIP-CB)/4;if(!Number.isInteger(idx)||idx<0||idx>=prog.length)throw Error(`EIP=0x${hx(EIP)} is outside the program — missing exit syscall or bad RET?`);
+ const I=prog[idx],pf={...F};pre=[...R];memLog=[];try{exec(I)}catch(e){e.line=I.line;throw e}
+ steps++;cycles+=({mul:3,imul:3,div:20,idiv:20,call:2,ret:2,int:30}[I.op]||1)+(I.o.some(o=>o.k=='m')?1:0);cov.add(I.line);lastW=memLog;
+ const d=[];for(let i=0;i<8;i++)if(pre[i]!=R[i])d.push([N32[i].toUpperCase(),pre[i],R[i]]);for(const k in F)if(pf[k]!=F[k])d.push([k.toUpperCase(),pf[k],F[k]]);
+ hist.push({n:steps,I,d,m:memLog.length});if(hist.length>300)hist.shift();if(halted)st='halted'}
+const lineAt=a=>{const i=(a-CB)/4;return prog[i]&&Number.isInteger(i)?prog[i].line:0};
+// ---- control
+const pill=()=>{$('stt').textContent=st}
+function fail(e){st='error';halted=0;const l=e.line||lineAt(EIP);outS+=`\n✖ Runtime error${l?' (line '+l+')':''}: ${e.message}\n`;errs=[{line:l,msg:'Runtime: '+e.message,rt:1}]}
+function build(){const ok=assemble($('ed').value);hist=[];cov=new Set;lastW=[];if(ok){load();outS='';} else{st='error';outS='✖ Assembly failed — see errors below the editor.\n'}refresh();return ok}
+function load(){R.fill(0);R[4]=0xBFFFFFF0;F={cf:0,pf:0,af:0,zf:0,sf:0,of:0};initD.set(D);S.fill(0);EIP=entry;steps=cycles=0;halted=0;tgt=null;stdin=$('sin').value?$('sin').value+'\n':'';st='ready';pre=[...R];hist=[];cov=new Set;lastW=[];errs=[]}
+function reset(){if(!build())return}
+function ensure(){if(st=='idle'||(st=='error'&&!prog.length))return build();if(st=='halted'||st=='error'){outS+='\n(Press Reset to run again)\n';refresh();return false}return true}
+function step(over){if(st=='running')return;if(!ensure())return;if(st=='ready')st='paused';try{const I=prog[(EIP-CB)/4];if(over&&I&&I.op=='call'){tgt=EIP+4;tsp=R[4];st='running';runLoop(true)}else{stepOnce();if(st!='halted')st='paused'}}catch(e){fail(e)}refresh()}
+function run(){if(st=='running')return;if(!ensure())return;st='running';sp0=steps;runLoop()}
+function runLoop(first){if(st!='running')return;const v=+$('spd').value,batch=v>80?(v-80)**2*5:1,delay=v>=80?0:(80-v)*8;
+ try{for(let i=0;i<batch&&st=='running';i++){stepOnce();if(st=='halted')break;if(steps-sp0>LIM)throw Error(`Possible infinite loop — stopped after ${LIM} instructions`);
+  if(tgt!=null&&EIP==tgt&&R[4]>=tsp){tgt=null;st='paused';break}if(bps.has(lineAt(EIP))){st='paused';break}}}catch(e){fail(e)}
+ refresh();if(st=='running')setTimeout(runLoop,delay)}
+// ---- UI render
+function hlLine(l){return esc(l).replace(/(;.*$)|("[^"]*"|'[^']*')|(\b0x[0-9a-f]+\b|\b\d[0-9a-f]*h\b|\b\d+\b)|([A-Za-z_.$][\w.$]*:?)/gi,(m,c,s,n,w)=>c?`<span class=c>${m}</span>`:s?`<span class=s>${m}</span>`:n?`<span class=n>${m}</span>`:m.endsWith(':')?`<span class=b>${m}</span>`:reg(m)?`<span class=r>${m}</span>`:OPS[m.toLowerCase()]?`<span class=k>${m}</span>`:DIRS.has(m.toLowerCase())||/^(equ)$/i.test(m)?`<span class=d>${m}</span>`:m)}
+function edr(){const L=$('ed').value.split('\n'),cur=st=='idle'||st=='halted'?0:lineAt(EIP),eb=new Set(errs.map(e=>e.line));
+ $('hl').innerHTML=L.map((l,i)=>`<div class="l${i+1==cur?' cur':''}${eb.has(i+1)?' err':''}">${hlLine(l)} </div>`).join('');
+ $('gu').innerHTML=L.map((l,i)=>`<div class="g${bps.has(i+1)?' bp':''}${cov.has(i+1)?' ran':''}${eb.has(i+1)?' err':''}" data-l="${i+1}">${i+1}</div>`).join('');syncS()}
+const syncS=()=>{$('hl').scrollTop=$('ed').scrollTop;$('hl').scrollLeft=$('ed').scrollLeft;$('gu').scrollTop=$('ed').scrollTop};
+function regs(){$('regs').innerHTML=N32.map((n,i)=>{const v=R[i],s=n.slice(1),h=i<4?`${s[0]}h`:'',ln=i<4?`${s[0]}l`:'';return`<div class="rg${pre[i]!=v?' chg':''}"><b>${n.toUpperCase()}</b> <span class=mono>${hx(v)}</span> <span class=mu>${v|0}</span><small>${N16[i].toUpperCase()} ${hx(v&65535,4)}${i<4?` · ${h.toUpperCase()} ${hx((v>>8)&255,2)} · ${ln.toUpperCase()} ${hx(v&255,2)}`:''}</small></div>`}).join('')+
+ `<div class="rg"><b>EIP</b> <span class=mono>${hx(EIP)}</span><small>line ${lineAt(EIP)||'—'}</small></div><div class="rg"><b>EFLAGS</b> <span class=mono>${hx(F.cf|2|F.pf<<2|F.af<<4|F.zf<<6|F.sf<<7|F.of<<11)}</span></div>`;
+ $('fls').innerHTML=['zf','cf','sf','of','pf','af'].map(k=>`<span class="fl${F[k]?' on':''}" title="${{zf:'Zero',cf:'Carry/borrow',sf:'Sign',of:'Signed overflow',pf:'Parity of low byte',af:'Auxiliary carry (bit 3→4)'}[k]}">${k.toUpperCase()}=${F[k]}</span>`).join('')}
+const rb=a=>{try{return rd(a,1)}catch{return null}};
+function memv(){let a=parseInt($('ma').value)>>>0||DBA;a&=~15;const hot=new Set(lastW);let h='<table>';for(let r=0;r<16;r++){const b=a+r*16,sy=Object.keys(sym).filter(k=>sym[k]>=b&&sym[k]<b+16&&sym[k]>=DBA).join(' '),by=[...Array(16)].map((_,i)=>rb(b+i));
+ h+=`<tr><td class=mu>${hx(b)}</td><td>${by.map((v,i)=>`<span class="${hot.has(b+i)?'hot':''}">${v==null?'··':hx(v,2)}</span>`).join(' ')}</td><td>${esc(by.map(v=>v>31&&v<127?String.fromCharCode(v):'.').join(''))}</td><td class=k style="color:var(--ac)">${esc(sy)}</td></tr>`}$('mv').innerHTML=h+'</table>'}
+function stkv(){let h='<table>',n=0;for(let a=R[4];a+4<=SB+SSZ&&n<14;a+=4,n++){const v=rd(a,4),ci=(v-CB)/4,note=Number.isInteger(ci)&&prog[ci]&&v>=CB?` ← return to line ${prog[ci].line}`:'';h+=`<tr class=mono><td class=mu>${hx(a)}</td><td>${hx(v)}</td><td>${v|0}</td><td style="color:var(--ac)">${a==R[4]?'◀ ESP ':''}${a==R[5]?'◀ EBP ':''}${note}</td></tr>`}$('t-stk').innerHTML=(n?h+'</table>':'<span class=mu>Stack is empty (ESP at top of stack segment).</span>')+`<p class=mu>ESP=${hx(R[4])} EBP=${hx(R[5])} · stack grows toward lower addresses.</p>`}
+function tlv(){$('t-tl').innerHTML=hist.length?'<table>'+hist.slice().reverse().map(h=>`<tr class=mono><td class=mu>#${h.n}</td><td>L${h.I.line}</td><td>${esc(h.I.op+' '+h.I.args.join(', '))}</td><td style="color:var(--ac)">${h.d.map(x=>`${x[0]} ${x[0].length==2&&'CPZSOA'.includes(x[0][0])?x[1]+'→'+x[2]:hx(x[1])+'→'+hx(x[2])}`).join(' · ')}${h.m?` · MEM×${h.m}`:''}</td></tr>`).join('')+'</table>':'<span class=mu>No instructions executed yet.</span>'}
+const refFind=op=>REF.find(r=>r[0].split('/').includes(op));
+function exv(){const I=prog[(EIP-CB)/4],e=I&&refFind(I.op),h=hist[hist.length-1];let s='';
+ if(I&&st!='idle')s+=`<div class=ct><b>Next (line ${I.line}):</b> <code>${esc(I.op+' '+I.args.join(', '))}</code>${e?`<br><b>Meaning:</b> ${e[2]}<br><b>Flags:</b> ${e[3]}<br><b>Memory:</b> ${e[4]}`:''}</div>`;else s+='<div class=ct>Assemble the program and step to see an explanation of each instruction.</div>';
+ if(h)s+=`<div class=ct><b>Last executed #${h.n} (line ${h.I.line}):</b> <code>${esc(h.I.op+' '+h.I.args.join(', '))}</code><br><b>Before → After:</b> ${h.d.length?h.d.map(x=>`<code>${x[0]} ${x[0].length==2&&'CPZSOA'.includes(x[0][0])?x[1]+'→'+x[2]:hx(x[1])+'→'+hx(x[2])}</code>`).join(' '):'no register/flag change'} ${h.m?`· wrote ${h.m} byte(s) to memory`:''}</div>`;$('t-ex').innerHTML=s}
+function refv(){const q=$('rq').value.toLowerCase();$('rl').innerHTML=REF.filter(r=>(r.join(' ')).toLowerCase().includes(q)).map(r=>`<div class=ct><b>${r[0].toUpperCase()}</b> — <code>${esc(r[1])}</code><br>${r[2]}<br><span class=mu>Flags:</span> ${r[3]} <span class=mu>· Memory:</span> ${r[4]}<br><span class=mu>Example:</span> <code>${esc(r[5])}</code></div>`).join('')||'<span class=mu>No matching instruction.</span>'}
+function stv(){const code=new Set(prog.map(p=>p.line));$('t-st').innerHTML=`<div class=ct>Instructions executed: <b>${steps}</b><br>Cycles (estimated): <b>${cycles}</b><br>Coverage: <b>${[...cov].filter(l=>code.has(l)).length}/${code.size}</b> code lines<br>State: <b>${st}</b><br>Breakpoints: <b>${[...bps].sort((a,b)=>a-b).join(', ')||'none'}</b></div>`}
+function refresh(){pill();regs();$('term').textContent=outS||'(no output yet)';$('term').scrollTop=1e9;
+ $('errs').innerHTML=errs.map(e=>`✖ line ${e.line||'?'}: ${esc(e.msg)}`).join('<br>');edr();const t=document.querySelector('.tb.on').id;({'t-mem':memv,'t-stk':stkv,'t-tl':tlv,'t-ex':exv,'t-st':stv})[t]?.()}
+// ---- data
+const PN=`print_num:
+  push ebx
+  push ecx
+  push edx
+  push esi
+  mov esi, buf+11
+  mov byte [esi], 10
+  mov ecx, 10
+.dg:
+  xor edx, edx
+  div ecx
+  add dl, '0'
+  dec esi
+  mov [esi], dl
+  test eax, eax
+  jnz .dg
+  mov ecx, esi
+  mov edx, buf+12
+  sub edx, esi
+  mov eax, 4
+  mov ebx, 1
+  int 0x80
+  pop esi
+  pop edx
+  pop ecx
+  pop ebx
+  ret
+`,EXIT=`  mov eax, 1
+  xor ebx, ebx
+  int 0x80
+`,BUF=`section .bss
+buf resb 12
+`;
+const EX={'Hello World':`section .data
+msg db "Hello, COAL Lab!", 10
+len equ $ - msg
+section .text
+global _start
+_start:
+  mov eax, 4      ; SYS_WRITE
+  mov ebx, 1      ; stdout
+  mov ecx, msg
+  mov edx, len
+  int 0x80
+${EXIT}`,'Factorial (CALL/RET)':`${BUF}section .text
+global _start
+_start:
+  mov eax, 5
+  call fact
+  call print_num   ; prints 120
+${EXIT}
+fact:               ; eax = eax!
+  cmp eax, 1
+  jbe .base
+  push eax
+  dec eax
+  call fact
+  pop ecx
+  mul ecx
+  ret
+.base:
+  mov eax, 1
+  ret
+${PN}`,'Fibonacci':`${BUF}section .text
+global _start
+_start:
+  mov edi, 0
+  mov ebp, 1
+  mov ecx, 10
+next:
+  mov eax, edi
+  call print_num
+  mov eax, edi
+  add eax, ebp
+  mov edi, ebp
+  mov ebp, eax
+  loop next
+${EXIT}${PN}`,'Star pattern (loops)':`section .data
+star db "*"
+nl db 10
+section .text
+global _start
+_start:
+  mov ebx, 1
+.row:
+  mov esi, ebx
+.col:
+  push ebx
+  mov eax, 4
+  mov ebx, 1
+  mov ecx, star
+  mov edx, 1
+  int 0x80
+  pop ebx
+  dec esi
+  jnz .col
+  push ebx
+  mov eax, 4
+  mov ebx, 1
+  mov ecx, nl
+  mov edx, 1
+  int 0x80
+  pop ebx
+  inc ebx
+  cmp ebx, 6
+  jl .row
+${EXIT}`,'Array maximum':`section .data
+arr dd 12, 45, 7, 93, 31, 64
+cnt equ ($ - arr) / 4
+${BUF}section .text
+global _start
+_start:
+  mov esi, 0
+  mov eax, [arr]
+.l:
+  cmp [arr+esi*4], eax
+  jle .s
+  mov eax, [arr+esi*4]
+.s:
+  inc esi
+  cmp esi, cnt
+  jl .l
+  call print_num
+${EXIT}${PN}`,'Stack demonstration':`section .text
+global _start
+_start:
+  mov ebp, esp
+  push 10
+  push 20
+  push 30
+  pop eax        ; 30
+  pop ebx        ; 20
+  pop ecx        ; 10
+  add eax, ebx
+  add eax, ecx   ; 60
+  mov ebx, eax
+  mov eax, 1
+  int 0x80       ; exit code 60
+`,'String uppercase + memory':`section .data
+s db "coal lab", 10, 0
+section .text
+global _start
+_start:
+  mov esi, s
+.u:
+  mov al, [esi]
+  cmp al, 0
+  je .done
+  cmp al, 'a'
+  jb .n
+  cmp al, 'z'
+  ja .n
+  sub al, 32
+  mov [esi], al
+.n:
+  inc esi
+  jmp .u
+.done:
+  mov eax, 4
+  mov ebx, 1
+  mov ecx, s
+  mov edx, 10
+  int 0x80
+${EXIT}`};
+const REF=`mov|MOV dst, src|Copies src into dst. Sizes must match.|none|writes dst if memory|mov eax, [x]
+add/adc|ADD dst, src|dst = dst + src (ADC adds carry too).|CF OF SF ZF PF AF|writes dst|add eax, 5
+sub/sbb|SUB dst, src|dst = dst − src (SBB subtracts borrow too).|CF OF SF ZF PF AF|writes dst|sub ecx, 1
+inc/dec|INC dst|Adds/subtracts 1; CF is preserved.|OF SF ZF PF AF|writes dst|inc esi
+neg|NEG dst|Two's complement negate.|CF OF SF ZF PF AF|writes dst|neg eax
+mul|MUL src|Unsigned multiply: EDX:EAX = EAX × src (AX=AL×src for bytes).|CF=OF=1 if upper half nonzero|none|mul ecx
+imul|IMUL src | dst,src | dst,src,imm|Signed multiply.|CF=OF=1 if result truncated|none|imul eax, ebx, 3
+div|DIV src|Unsigned EDX:EAX ÷ src → EAX quotient, EDX remainder. Divisor 0 raises #DE.|undefined|none|xor edx,edx / div ecx
+idiv|IDIV src|Signed divide; use CDQ first to sign-extend EAX into EDX.|undefined|none|cdq / idiv ecx
+cdq|CDQ|Sign-extends EAX into EDX.|none|none|cdq
+cmp|CMP a, b|Computes a − b, discards result, sets flags.|CF OF SF ZF PF AF|none|cmp eax, 10
+test|TEST a, b|a AND b, discards result.|SF ZF PF (CF=OF=0)|none|test eax, eax
+and/or/xor|AND dst, src|Bitwise logic; CF=OF=0.|SF ZF PF|writes dst|xor eax, eax
+not|NOT dst|Flips every bit.|none|writes dst|not eax
+shl/sal|SHL dst, n|Shift left; last bit out goes to CF. x << n = x·2ⁿ.|CF OF SF ZF PF|writes dst|shl eax, 2
+shr|SHR dst, n|Logical shift right (zero fill).|CF OF SF ZF PF|writes dst|shr eax, 1
+sar|SAR dst, n|Arithmetic shift right (keeps sign bit).|CF SF ZF PF|writes dst|sar eax, 1
+rol/ror|ROL dst, n|Rotate bits; bit shifted out re-enters on the other side.|CF OF|writes dst|rol al, 1
+push|PUSH src|ESP −= 4, then stores src at [ESP].|none|writes stack|push eax
+pop|POP dst|Loads [ESP] into dst, then ESP += 4.|none|reads stack|pop ebx
+call|CALL label|Pushes return address, jumps to label.|none|writes stack|call fact
+ret|RET|Pops return address into EIP.|none|reads stack|ret
+jmp|JMP label|Unconditional jump.|none|none|jmp .loop
+je/jz|JE label|Jump if ZF=1 (equal / zero).|reads ZF|none|je done
+jne/jnz|JNE label|Jump if ZF=0.|reads ZF|none|jne again
+jg/jnle/jge/jnl/jl/jnge/jle/jng|JG label|Signed compares using ZF, SF, OF.|reads ZF SF OF|none|jl .row
+ja/jnbe/jae/jnb/jnc/jb/jnae/jc/jbe/jna|JA label|Unsigned compares using CF, ZF.|reads CF ZF|none|jbe .base
+js/jns/jo/jno/jp/jnp|JS label|Jump on a single flag.|reads flag|none|js neg
+loop|LOOP label|ECX −= 1; jump if ECX ≠ 0.|none|none|loop next
+lea|LEA r, [mem]|Loads the address of mem (no memory access).|none|none|lea esi, [arr+4]
+xchg|XCHG a, b|Swaps two operands.|none|writes both|xchg eax, ebx
+movzx/movsx|MOVZX r, src|Widens with zero / sign extension.|none|reads src|movzx eax, byte [x]
+leave|LEAVE|ESP = EBP; pop EBP.|none|reads stack|leave
+nop/hlt|NOP|Does nothing / stops the CPU.|none|none|nop
+int|INT 0x80|Linux syscall: EAX=1 exit(EBX), 3 read(EBX,ECX,EDX), 4 write(EBX=1,ECX=buf,EDX=len).|none|reads/writes buffer|int 0x80`.split('\n').map(l=>l.split('|'));
+const LRN=[['Registers','EAX accumulator/mul/div/return · EBX base · ECX counter (LOOP) · EDX data/high half · ESI/EDI string pointers · ESP stack top · EBP frame base. AX=low 16 bits, AH/AL = bytes of AX.'],['Flags','ZF set when result is 0 · CF carry/borrow out (unsigned overflow) · SF = sign bit · OF signed overflow · PF even parity of low byte · AF carry from bit 3.'],['Addressing modes','Immediate <code>mov eax,5</code> · Register <code>mov eax,ebx</code> · Direct <code>mov eax,[x]</code> · Register indirect <code>[esi]</code> · Base+index*scale+disp <code>[arr+esi*4+8]</code>.'],['Stack & procedures','PUSH decrements ESP then stores; POP loads then increments. CALL pushes the return address; RET pops it. Unbalanced pushes make RET jump to garbage.'],['Loops & jumps','CMP sets flags; Jcc reads them. Use JL/JG for signed, JB/JA for unsigned. LOOP uses ECX.'],['System calls','int 0x80 with EAX=number: 1 exit, 3 read, 4 write. Strings are bytes in memory — EDX is the length.'],['Common errors','Missing size on [mem],imm · mem-to-mem MOV · forgetting exit syscall · DIV with EDX not cleared · mixing signed/unsigned jumps · unbalanced stack.'],['Viva questions','1) Why XOR EDX,EDX before DIV? 2) Difference between JB and JL? 3) What does CALL push? 4) Why does INC not change CF? 5) What is little-endian storage?'],['Exercise','Predict EAX and flags: <code>mov al,200 / add al,100</code> → AL=0x2C, CF=1, OF=0. Step through to verify.']];
+// ---- wiring
+$('tabs').innerHTML=[['mem','Memory'],['stk','Stack'],['tl','Timeline'],['ex','Explain'],['ref','Reference'],['lrn','Learn'],['st','Stats']].map(([k,n],i)=>`<button data-t="${k}" class="${i?'':'on'}">${n}</button>`).join('');
+$('tabs').onclick=e=>{const t=e.target.dataset.t;if(!t)return;document.querySelectorAll('.tabs button,.tb').forEach(x=>x.classList.remove('on'));e.target.classList.add('on');$('t-'+t).classList.add('on');refresh()};
+$('t-lrn').innerHTML=LRN.map(l=>`<div class=ct><b>${l[0]}</b><br>${l[1]}</div>`).join('');$('rq').oninput=refv;refv();
+document.querySelector('#t-mem').onclick=e=>{const a=e.target.dataset.a;if(a){$('ma').value='0x'+hx(a=='d'?DBA:a=='s'?SB+SSZ-256:R[4]&~15);refresh()}};$('ma').onchange=refresh;
+$('exs').innerHTML=Object.keys(EX).map(k=>`<option>${k}</option>`).join('');$('exs').onchange=()=>{$('ed').value=EX[$('exs').value];st='idle';errs=[];bps.clear();hist=[];cov=new Set;outS='';refresh()};
+$('bA').onclick=build;$('bR').onclick=run;$('bP').onclick=()=>{if(st=='running'){st='paused';refresh()}};$('bI').onclick=()=>step(0);$('bO').onclick=()=>step(1);
+$('bS').onclick=()=>{if(st=='running'||st=='paused'){st='halted';outS+='\n[stopped by user]\n';refresh()}};$('bX').onclick=()=>{st='idle';build()};$('bY').onclick=()=>{st='idle';if(build())run()};
+$('bCl').onclick=()=>{outS='';refresh()};$('bCb').onclick=()=>{bps.clear();refresh()};
+$('gu').onclick=e=>{const l=+e.target.dataset.l;if(l){bps.has(l)?bps.delete(l):bps.add(l);refresh()}};
+$('ed').oninput=()=>{if(st!='running'){st='idle';errs=[]}edr();pill();try{localStorage.setItem('coal.cur',$('ed').value)}catch{}};$('ed').onscroll=syncS;
+$('ed').onkeydown=e=>{if(e.key=='Tab'){e.preventDefault();document.execCommand('insertText',false,'    ')}};
+const sv_=()=>{try{return JSON.parse(localStorage.getItem('coal.saved')||'{}')}catch{return{}}},lst=()=>{$('svs').innerHTML=Object.keys(sv_()).map(k=>`<option>${esc(k)}</option>`).join('')||'<option>(none saved)</option>'};
+$('bSv').onclick=()=>{try{const o=sv_(),n=$('pn').value.trim()||'untitled';o[n]=$('ed').value;localStorage.setItem('coal.saved',JSON.stringify(o));lst();outS+=`\n[saved "${n}"]\n`;refresh()}catch{outS+='\n[storage unavailable]\n';refresh()}};
+$('bLd').onclick=()=>{const v=sv_()[$('svs').value];if(v!=null){$('ed').value=v;$('ed').oninput()}};
+$('bCp').onclick=async()=>{try{await navigator.clipboard.writeText($('ed').value);outS+='\n[copied]\n'}catch{$('ed').select();outS+='\n[select-all done — press Ctrl+C]\n'}refresh()};
+$('bIm').onclick=()=>$('fi').click();$('fi').onchange=e=>{const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=()=>{$('ed').value=r.result;$('ed').oninput()};r.readAsText(f)};
+$('bEx').onclick=()=>{const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([$('ed').value],{type:'text/plain'}));a.download=($('pn').value||'program')+'.asm';a.click()};
+$('bT').onclick=()=>{const r=document.documentElement,t=r.dataset.theme=='navy'?'bordeaux':'navy';r.dataset.theme=t;try{localStorage.setItem('coal.theme',t)}catch{}};
+document.addEventListener('keydown',e=>{const m={F5:run,F10:()=>step(1),F11:()=>step(0),Escape:()=>$('bP').click()};if(m[e.key]){e.preventDefault();m[e.key]()}else if(e.ctrlKey&&e.key=='Enter'){e.preventDefault();build()}else if(e.key=='F9'){e.preventDefault();const l=$('ed').value.slice(0,$('ed').selectionStart).split('\n').length;bps.has(l)?bps.delete(l):bps.add(l);refresh()}});
+try{const t=localStorage.getItem('coal.theme');if(t)document.documentElement.dataset.theme=t;$('ed').value=localStorage.getItem('coal.cur')||EX['Hello World']}catch{$('ed').value=EX['Hello World']}
+lst();refresh();
+</script></body></html>
